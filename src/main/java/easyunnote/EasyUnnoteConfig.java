@@ -16,4 +16,14 @@ public interface EasyUnnoteConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		keyName = "enableTables",
+		name = "Enable Tables",
+		description = "Allow placing banknotes on tables."
+	)
+	default boolean enableTables()
+	{
+		return false;
+	}
 }
