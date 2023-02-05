@@ -44,6 +44,8 @@ public class EasyUnnotePlugin extends Plugin
 		"Phials",
 		"Piles",
 		"Tiles",
+		// The following don't have an unnote option, but are useful to use noted items on
+		"Wesley",
 	};
 
 	@Inject
