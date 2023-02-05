@@ -76,7 +76,7 @@ public class EasyUnnotePlugin extends Plugin
 		}
 
 		final int itemId = selectedWidget.getItemId();
-		if (itemId <= 0 || !client.getSpellSelected()) {
+		if (itemId <= 0 || !client.isWidgetSelected()) {
 			return;
 		}
 
