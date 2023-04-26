@@ -156,7 +156,7 @@ public class EasyUnnotePlugin extends Plugin
 		if ("Grand Exchange booth".equalsIgnoreCase(object.getName())) {
 			return config.enableGEBooths();
 		}
-		if ("Table".equalsIgnoreCase(object.getName()) || "Counter".equalsIgnoreCase(object.getName())) {
+		if (object.getName().toLowerCase().endsWith("table") || "Counter".equalsIgnoreCase(object.getName())) {
 			return config.enableTables();
 		}
 		return Arrays.stream(object.getActions())
