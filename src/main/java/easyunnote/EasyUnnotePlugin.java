@@ -53,6 +53,11 @@ public class EasyUnnotePlugin extends Plugin
 		"Demon butler",
 	};
 
+	private static final String[] BANKNOTE_LIKE = {
+		"Looting bag note",
+		"Rune pouch note",
+	};
+
 	@Inject
 	private Client client;
 
@@ -88,7 +93,7 @@ public class EasyUnnotePlugin extends Plugin
 		}
 
 		final ItemComposition itemComposition = client.getItemDefinition(itemId);
-		if (itemComposition.getNote() == -1) {
+		if (!canUnnote(itemComposition)) {
 			return;
 		}
 
@@ -143,6 +148,13 @@ public class EasyUnnotePlugin extends Plugin
 		}
 
 		return null;
+	}
+
+	private boolean canUnnote(ItemComposition item) {
+		if (item.getNote() != -1) {
+			return true;
+		}
+		return Arrays.stream(BANKNOTE_LIKE).anyMatch(item.getName()::equals);
 	}
 
 	private boolean canUnnote(ObjectComposition object) {
