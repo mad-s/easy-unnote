@@ -46,6 +46,11 @@ public class EasyUnnotePlugin extends Plugin
 		"Tiles",
 		// The following don't have an unnote option, but are useful to use noted items on
 		"Wesley",
+		"Rick",
+		"Maid",
+		"Cook",
+		"Butler",
+		"Demon butler",
 	};
 
 	@Inject
