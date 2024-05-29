@@ -51,6 +51,7 @@ public class EasyUnnotePlugin extends Plugin
 		"Cook",
 		"Butler",
 		"Demon butler",
+		"Virilis",
 	};
 
 	private static final String[] BANKNOTE_LIKE = {
