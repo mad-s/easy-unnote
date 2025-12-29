@@ -9,9 +9,11 @@ import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.events.ClientTick;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.Menu;
 import net.runelite.api.MenuEntry;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
@@ -20,8 +22,8 @@ import net.runelite.api.Scene;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
 import net.runelite.api.WallObject;
+import net.runelite.api.WorldView;
 import net.runelite.api.widgets.Widget;
-import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -108,7 +110,7 @@ public class EasyUnnotePlugin extends Plugin {
 		if (selectedWidget == null) {
 			return;
 		}
-		if (selectedWidget.getId() != WidgetInfo.INVENTORY.getId()) {
+		if (selectedWidget.getId() != InterfaceID.Inventory.ITEMS) {
 			return;
 		}
 
@@ -122,7 +124,8 @@ public class EasyUnnotePlugin extends Plugin {
 			return;
 		}
 
-		MenuEntry[] menuEntries = client.getMenuEntries();
+		Menu menu = client.getMenu();
+		MenuEntry[] menuEntries = menu.getMenuEntries();
 		MenuEntry[] newEntries = Arrays.stream(menuEntries)
 				.filter(e -> {
 					switch (e.getType()) {
@@ -141,20 +144,21 @@ public class EasyUnnotePlugin extends Plugin {
 							return canUnnote(composition);
 						case WIDGET_TARGET_ON_NPC:
 							final NPC npc = e.getNpc();
-							return canUnnote(npc.getTransformedComposition());
+							return npc != null && canUnnote(npc.getTransformedComposition());
 						default:
 							return true;
 					}
 				})
 				.toArray(MenuEntry[]::new);
 
-		client.setMenuEntries(newEntries);
+		menu.setMenuEntries(newEntries);
 	}
 
 	private TileObject findObject(int x, int y, int id) {
-		Scene scene = client.getScene();
+		WorldView view = client.getTopLevelWorldView();
+		Scene scene = view.getScene();
 		Tile[][][] tiles = scene.getTiles();
-		Tile tile = tiles[client.getPlane()][x][y];
+		Tile tile = tiles[view.getPlane()][x][y];
 		if (tile != null) {
 			for (GameObject gameObject : tile.getGameObjects()) {
 				if (gameObject != null && gameObject.getId() == id) {
