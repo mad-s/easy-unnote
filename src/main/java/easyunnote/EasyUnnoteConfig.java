@@ -26,4 +26,14 @@ public interface EasyUnnoteConfig extends Config
 	{
 		return false;
 	}
+
+	@ConfigItem(
+		keyName = "customUnnoteList",
+		name = "Custom unnote list",
+		description = "List of extra NPCs/objects that notes can be used on."
+	)
+	default String customUnnoteList()
+	{
+		return "";
+	}
 }

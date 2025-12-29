@@ -1,6 +1,9 @@
 package easyunnote;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import com.google.inject.Provides;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -21,43 +24,47 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
 @Slf4j
-@PluginDescriptor(
-	name = "Easy Unnote"
-)
-public class EasyUnnotePlugin extends Plugin
-{
+@PluginDescriptor(name = "Easy Unnote")
+public class EasyUnnotePlugin extends Plugin {
 	// List of objects that act as a bank, but don't have a "Bank" option
 	private static final String[] UNNOTE_OBJECTS = {
-		"Bank chest",
-		"Bank Chest-wreck",
+			"Bank chest",
+			"Bank Chest-wreck",
 	};
 
 	// List of NPC names that can unnote items, but don't have a "Bank" option
 	private static final String[] UNNOTE_NPCS = {
-		"Aisles",
-		"Banknote Exchange Merchant",
-		"Elder Chaos druid",
-		"Phials",
-		"Piles",
-		"Tiles",
-		// The following don't have an unnote option, but are useful to use noted items on
-		"Wesley",
-		"Rick",
-		"Maid",
-		"Cook",
-		"Butler",
-		"Demon butler",
-		"Virilis",
+			"Aisles",
+			"Phials",
+			"Piles",
+			"Tiles",
+			"Biles",
+			"Banknote Exchange Merchant",
+			"Elder Chaos druid",
+			"Virilis",
+			// The following don't allow unnoting, but still have banknote interactions
+			"Wesley",
+			"Zahur",
+			"Friendly Forester",
+
+			"Rick",
+			"Maid",
+			"Cook",
+			"Butler",
+			"Demon butler",
 	};
 
 	private static final String[] BANKNOTE_LIKE = {
-		"Looting bag note",
-		"Rune pouch note",
+			"Looting bag note",
+			"Rune pouch note",
 	};
+
+	private HashSet<String> customUnnotelist;
 
 	@Inject
 	private Client client;
@@ -66,14 +73,31 @@ public class EasyUnnotePlugin extends Plugin
 	private EasyUnnoteConfig config;
 
 	@Provides
-	EasyUnnoteConfig provideConfig(ConfigManager configManager)
-	{
+	EasyUnnoteConfig provideConfig(ConfigManager configManager) {
 		return configManager.getConfig(EasyUnnoteConfig.class);
 	}
 
+	void updateCustomUnnoteList() {
+		customUnnotelist = Arrays.stream(config.customUnnoteList().split("[,\\n]"))
+				.filter(Predicate.not(String::isBlank))
+				.map(String::toLowerCase)
+				.collect(Collectors.toCollection(HashSet::new));
+	}
+
+	@Override
+	protected void startUp() {
+		updateCustomUnnoteList();
+	}
+
 	@Subscribe
-	public void onClientTick(ClientTick clientTick)
-	{
+	public void onConfigChanged(ConfigChanged configChanged) {
+		if ("customUnnoteList".equals(configChanged.getKey())) {
+			updateCustomUnnoteList();
+		}
+	}
+
+	@Subscribe
+	public void onClientTick(ClientTick clientTick) {
 		// The menu is not rebuilt when it is open, so don't swap or else it will
 		// repeatedly swap entries
 		if (client.getGameState() != GameState.LOGGED_IN || client.isMenuOpen()) {
@@ -100,30 +124,30 @@ public class EasyUnnotePlugin extends Plugin
 
 		MenuEntry[] menuEntries = client.getMenuEntries();
 		MenuEntry[] newEntries = Arrays.stream(menuEntries)
-			.filter(e -> {
-				switch (e.getType()) {
-					case WIDGET_TARGET_ON_GROUND_ITEM:
-					case WIDGET_TARGET_ON_PLAYER:
-					case EXAMINE_NPC:
-					case EXAMINE_OBJECT:
-					case EXAMINE_ITEM_GROUND:
-						return false;
-					case WIDGET_TARGET_ON_GAME_OBJECT:
-						final TileObject gameObject = findObject(e.getParam0(), e.getParam1(), e.getIdentifier());
-						if (gameObject == null) {
+				.filter(e -> {
+					switch (e.getType()) {
+						case WIDGET_TARGET_ON_GROUND_ITEM:
+						case WIDGET_TARGET_ON_PLAYER:
+						case EXAMINE_NPC:
+						case EXAMINE_OBJECT:
+						case EXAMINE_ITEM_GROUND:
 							return false;
-						}
-						final ObjectComposition composition = client.getObjectDefinition(gameObject.getId());
-						return canUnnote(composition);
-					case WIDGET_TARGET_ON_NPC:
-						final NPC npc = e.getNpc();
-						return canUnnote(npc.getTransformedComposition());
-					default:
-						return true;
+						case WIDGET_TARGET_ON_GAME_OBJECT:
+							final TileObject gameObject = findObject(e.getParam0(), e.getParam1(), e.getIdentifier());
+							if (gameObject == null) {
+								return false;
+							}
+							final ObjectComposition composition = client.getObjectDefinition(gameObject.getId());
+							return canUnnote(composition);
+						case WIDGET_TARGET_ON_NPC:
+							final NPC npc = e.getNpc();
+							return canUnnote(npc.getTransformedComposition());
+						default:
+							return true;
 					}
-			})
-			.toArray(MenuEntry[]::new);
-		
+				})
+				.toArray(MenuEntry[]::new);
+
 		client.setMenuEntries(newEntries);
 	}
 
@@ -131,19 +155,15 @@ public class EasyUnnotePlugin extends Plugin
 		Scene scene = client.getScene();
 		Tile[][][] tiles = scene.getTiles();
 		Tile tile = tiles[client.getPlane()][x][y];
-		if (tile != null)
-		{
-			for (GameObject gameObject : tile.getGameObjects())
-			{
-				if (gameObject != null && gameObject.getId() == id)
-				{
+		if (tile != null) {
+			for (GameObject gameObject : tile.getGameObjects()) {
+				if (gameObject != null && gameObject.getId() == id) {
 					return gameObject;
 				}
 			}
-			
+
 			WallObject wallObject = tile.getWallObject();
-			if (wallObject != null && wallObject.getId() == id)
-			{
+			if (wallObject != null && wallObject.getId() == id) {
 				return wallObject;
 			}
 		}
@@ -166,6 +186,9 @@ public class EasyUnnotePlugin extends Plugin
 		if (Arrays.stream(UNNOTE_OBJECTS).anyMatch(object.getName()::equalsIgnoreCase)) {
 			return true;
 		}
+		if (customUnnotelist.contains(object.getName().toLowerCase())) {
+			return true;
+		}
 		if ("Grand Exchange booth".equalsIgnoreCase(object.getName())) {
 			return config.enableGEBooths();
 		}
@@ -173,15 +196,20 @@ public class EasyUnnotePlugin extends Plugin
 			return config.enableTables();
 		}
 		return Arrays.stream(object.getActions())
-			.anyMatch("Bank"::equalsIgnoreCase);
+				.anyMatch("Bank"::equalsIgnoreCase);
 	}
 
 	private boolean canUnnote(NPCComposition npc) {
 		if (Arrays.stream(UNNOTE_NPCS).anyMatch(npc.getName()::equalsIgnoreCase)) {
 			return true;
 		}
-		return Arrays.stream(npc.getActions())
-			.anyMatch("Bank"::equalsIgnoreCase);
+		if (customUnnotelist.contains(npc.getName().toLowerCase())) {
+			return true;
+		}
+		if (Arrays.stream(npc.getActions()).anyMatch("Bank"::equalsIgnoreCase)) {
+			return true;
+		}
+		return false;
 	}
 
 }
