@@ -53,7 +53,8 @@ public class EasyUnnotePlugin extends Plugin {
 			"Wesley",
 			"Zahur",
 			"Friendly Forester",
-
+			"Mercenary",
+		
 			"Rick",
 			"Maid",
 			"Cook",
